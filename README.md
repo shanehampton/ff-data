@@ -44,7 +44,7 @@ More models coming soon.
   - Coaching/system
     - Example: coach winning %
   - It is challening to isolate these dimensions - most attributes operate on multiple levels. For example, a player's draft capital may indicate a player's overall potential, but it also represents a team's investment in a given player. Each aspect can impact the model in different ways, particularly if a player moves on to a new team after being drafted elsewhere.
-- There is some promise in predict "opportunity" and/or underlying statistics instead of predicting direct fantasy scoring. Rather than modeling total fantasy points for a season, we can model something like opportunities per game or expected number of games played. Granularized predictions can produce more resilient models.
+- There is some promise in predicting "opportunity" and/or underlying statistics instead of predicting direct fantasy scoring. Rather than modeling total fantasy points for a season, we can model something like opportunities per game or expected number of games played. Granularized predictions can produce more resilient models.
 - Injuries are not easy to account for because of the vast spectrum of injury type and severity. Individual players can also respond differently to the same injury. Injuries can have massive impact on a player's fantasy value from season to season, so ignoring injury data is not a good option.
   - Maybe it's possible to engineer a proxy feature like "missed game probability" that can be incorpoated into the model.
 - Rookie players are particularly hard to model because of the lack of NFL statistical history. While XGBoost can handle undefined values by optimizing tree splits, we probably need a separate model enitrely with rookie-specific features.
