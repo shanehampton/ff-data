@@ -18,7 +18,7 @@ Tested with Python 3.5 and up. The recommended way to run this is in your own sc
 
 See `ff_data/data.py`.
 
-The framework currently supports raw scraping from Pro Football Reference, adhering to all PFF guidelines and rate limits. It includes player profile data as well as season logs and individual game logs going back an arbitrary number of years. The scraper focuses only on fantasy-relevant players for each given year to boost efficiency.
+The framework currently supports raw scraping from Pro Football Reference, adhering to all PFR guidelines and rate limits. It includes player profile data as well as season logs and individual game logs going back an arbitrary number of years. The scraper focuses only on fantasy-relevant players for each given year to boost efficiency.
 
 More data sources and features coming soon.
 
