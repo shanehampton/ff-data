@@ -1,11 +1,11 @@
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.model_selection import train_test_split
-from sklearn import tree
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import RepeatedKFold
 from xgboost import XGBRegressor
 import pandas as pd
+import json
 
 
 def decision_tree_regression(xtrain, xtest, ytrain, ytest, random_state, max_depth, min_samples_leaf, max_features, criterion):
@@ -60,20 +60,39 @@ def find_optimal_tree(x, y, random_state=None, n=3):
     return results[0]
 
 
-def run_xgboost(x, y, n_estimators: int, max_depth: int, learning_rate: float, min_child_weight: float, test_size: float = 0.2):
+def run_xgboost(
+    x: pd.DataFrame,
+    y: pd.DataFrame,
+    n_estimators: int,
+    max_depth: int,
+    learning_rate: float,
+    min_child_weight: float,
+    colsample_bytree: float,
+    subsample: float,
+    test_size: float = 0.2
+):
     '''
     Gradient-boosted decision tree regression ensemble via xgboost
     '''
-    model = XGBRegressor(n_estimators=n_estimators, max_depth=max_depth,
-                         learning_rate=learning_rate, min_child_weight=min_child_weight, colsample_bytree=1)
+    model = XGBRegressor(
+        n_estimators=n_estimators,
+        max_depth=max_depth,
+        learning_rate=learning_rate,
+        min_child_weight=min_child_weight,
+        colsample_bytree=colsample_bytree,
+        subsample=subsample
+    )
     xtrain, xtest, ytrain, ytest = train_test_split(x, y, test_size=test_size)
     model.fit(xtrain, ytrain)
     rsq = model.score(xtrain, ytrain)
     ypred = model.predict(xtest)
-    ypred_df = pd.DataFrame({'pred_points_pg': ypred}, index=xtest.index)
-    mae = mean_absolute_error(ypred, ytest)
+    ypred_df = pd.DataFrame({'result_pred': ypred}, index=ytest.index)
+    mae = mean_absolute_error(ytest, ypred)
+    rmse = mean_squared_error(ytest, ypred, squared=False)
     comp = pd.concat([ytest, ypred_df], axis=1)
-    comp['error'] = comp.pred_points_pg - comp.result_points_pg
+    comp['error'] = comp.result_pred - comp.result
+    comp['error_abs'] = comp.error.abs()
+    comp = comp.astype(float).round(1)
     return {
         'model': model,
         'xtrain': xtrain,
@@ -83,23 +102,64 @@ def run_xgboost(x, y, n_estimators: int, max_depth: int, learning_rate: float, m
         'ypred': ypred,
         'rsq': rsq,
         'mae': mae,
+        'rmse': rmse,
         'comp': comp
     }
 
 
-def xgboost_grid_search(x, y):
+def xgboost_grid_search(
+    x: pd.DataFrame,
+    y: pd.DataFrame,
+    n_estimators: list = None,
+    max_depth: list = None,
+    learning_rate: list = None,
+    min_child_weight: list = None,
+    gamma: list = None,
+    alpha: list = None,
+    reg_lambda: list = None,
+    colsample_bytree: list = None,
+    colsample_bylevel: list = None,
+    colsample_bynode: list = None,
+    subsample: list = None,
+    n_splits: int = 10,
+    n_repeats: int = 3,
+    scoring: str = 'neg_root_mean_squared_error'
+):
     '''
     Grid search through parameter space using xbgoost regression as a base model
     '''
     model = XGBRegressor()
-    n_estimators = [50, 100, 150, 200]
-    max_depth = [1, 2, 3, 4]
-    learning_rate = [0.01, 0.1, 0.2, 0.3]
-    min_child_weight = [1, 4, 7, 10]
-    param_grid = dict(max_depth=max_depth, n_estimators=n_estimators,
-                      learning_rate=learning_rate, min_child_weight=min_child_weight)
-    cv = RepeatedKFold(n_splits=10, n_repeats=3, random_state=88)
+    param_grid = dict()
+    if n_estimators:
+        param_grid['n_estimators'] = n_estimators
+    if max_depth:
+        param_grid['max_depth'] = max_depth
+    if learning_rate:
+        param_grid['learning_rate'] = learning_rate
+    if min_child_weight:
+        param_grid['min_child_weight'] = min_child_weight
+    if gamma:
+        param_grid['gamma'] = gamma
+    if alpha:
+        param_grid['alpha'] = alpha
+    if reg_lambda:
+        param_grid['reg_lambda'] = reg_lambda
+    if colsample_bytree:
+        param_grid['colsample_bytree'] = colsample_bytree
+    if colsample_bylevel:
+        param_grid['colsample_bylevel'] = colsample_bylevel
+    if colsample_bynode:
+        param_grid['colsample_bynode'] = colsample_bynode
+    if subsample:
+        param_grid['subsample'] = subsample
+    print(f'param_grid:\n{json.dumps(param_grid, indent=4)}\n')
+    cv = RepeatedKFold(n_splits=n_splits, n_repeats=n_repeats)
     grid_search = GridSearchCV(
-        model, param_grid, scoring='neg_mean_absolute_error', cv=cv, verbose=1)
+        model,
+        param_grid,
+        scoring=scoring,
+        cv=cv,
+        verbose=1
+    )
     grid_result = grid_search.fit(x, y)
     return grid_result
